@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vwce-pac-dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+      --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9; --color-surface-offset:#f3f0ec; --color-border:#d4d1ca; --color-divider:#dcd9d5;
+      --color-text:#28251d; --color-text-muted:#7a7974; --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-success:#437a22; --color-warning:#d19900; --color-error:#a13544;
+      --radius-sm:.375rem; --radius-md:.5rem; --radius-lg:.75rem; --radius-xl:1rem;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.06); --shadow-md:0 8px 24px rgba(0,0,0,.08);
+    }
+    [data-theme="dark"] {
+      --color-bg:#171614; --color-surface:#1c1b19; --color-surface-2:#201f1d; --color-surface-offset:#22211f; --color-border:#393836; --color-divider:#262523;
+      --color-text:#eceae6; --color-text-muted:#aaa7a0; --color-primary:#4f98a3; --color-primary-hover:#227f8b; --color-success:#6daa45; --color-warning:#edb336; --color-error:#dd6974;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.2); --shadow-md:0 10px 32px rgba(0,0,0,.32);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'Inter',system-ui,sans-serif;font-size:var(--text-base);background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    button,input{font:inherit;color:inherit}
+    .dashboard{display:grid;grid-template-columns:280px 1fr;grid-template-rows:72px 1fr;height:100dvh}
+    .sidebar{grid-row:1/-1;background:var(--color-surface);border-right:1px solid color-mix(in oklab,var(--color-text) 12%, transparent);padding:var(--space-6);overflow:auto}
+    .header{grid-column:2;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6);background:color-mix(in oklab,var(--color-surface) 92%, transparent);border-bottom:1px solid color-mix(in oklab,var(--color-text) 10%, transparent);backdrop-filter:blur(12px)}
+    .main{grid-column:2;overflow:auto;padding:var(--space-6);display:grid;gap:var(--space-6)}
+    .brand{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-8)}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--color-primary),color-mix(in oklab,var(--color-primary) 50%, white));display:grid;place-items:center;box-shadow:var(--shadow-md)}
+    .brand h1{font-size:var(--text-lg);font-weight:800}
+    .brand p{font-size:var(--text-xs);color:var(--color-text-muted)}
+    .nav{display:grid;gap:var(--space-2)}
+    .nav a{padding:.8rem 1rem;border-radius:var(--radius-lg);text-decoration:none;color:var(--color-text-muted);font-size:var(--text-sm);font-weight:600}
+    .nav a.active,.nav a:hover{background:var(--color-surface-offset);color:var(--color-text)}
+    .panel{background:var(--color-surface);border:1px solid color-mix(in oklab,var(--color-text) 10%, transparent);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm)}
+    .hero{padding:var(--space-6);display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-6);flex-wrap:wrap}
+    .hero h2{font-size:var(--text-xl);font-weight:800;line-height:1.05;max-width:14ch}
+    .hero p{margin-top:var(--space-3);color:var(--color-text-muted);max-width:60ch}
+    .controls{display:flex;gap:var(--space-3);flex-wrap:wrap}
+    .btn{border:none;border-radius:var(--radius-lg);padding:.85rem 1.1rem;font-size:var(--text-sm);font-weight:700;cursor:pointer}
+    .btn-primary{background:var(--color-primary);color:white}.btn-primary:hover{background:var(--color-primary-hover)}
+    .btn-secondary{background:var(--color-surface-offset);color:var(--color-text)}
+    .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--space-4)}
+    .kpi{padding:var(--space-5)} .kpi .label{font-size:var(--text-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.06em}
+    .kpi .value{margin-top:var(--space-3);font-size:var(--text-lg);font-weight:800;font-variant-numeric:tabular-nums lining-nums}
+    .kpi .delta{margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)}
+    .grid-2{display:grid;grid-template-columns:1.2fr .8fr;gap:var(--space-6)}
+    .section{padding:var(--space-5)} .section h3{font-size:var(--text-lg);font-weight:800;margin-bottom:var(--space-4)}
+    .cards-2,.cards-3{display:grid;gap:var(--space-4)} .cards-2{grid-template-columns:repeat(2,1fr)} .cards-3{grid-template-columns:repeat(3,1fr)}
+    .mini{padding:var(--space-4);background:var(--color-surface-2);border:1px solid color-mix(in oklab,var(--color-text) 8%, transparent);border-radius:var(--radius-lg)}
+    .mini .name{font-size:var(--text-xs);color:var(--color-text-muted)} .mini .num{margin-top:var(--space-2);font-size:var(--text-lg);font-weight:800;font-variant-numeric:tabular-nums}
+    .traffic{display:inline-flex;align-items:center;gap:.55rem;padding:.55rem .8rem;border-radius:999px;font-size:var(--text-sm);font-weight:700}
+    .traffic.buy{background:color-mix(in oklab,var(--color-success) 18%, transparent);color:var(--color-success)}
+    .traffic.neutral{background:color-mix(in oklab,var(--color-warning) 18%, transparent);color:var(--color-warning)}
+    .traffic.wait{background:color-mix(in oklab,var(--color-error) 16%, transparent);color:var(--color-error)}
+    table{width:100%;border-collapse:collapse} th,td{text-align:left;padding:.9rem .75rem;font-size:var(--text-sm);border-bottom:1px solid color-mix(in oklab,var(--color-text) 8%, transparent);font-variant-numeric:tabular-nums}
+    th{color:var(--color-text-muted);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.06em}
+    .status{display:inline-flex;padding:.3rem .65rem;border-radius:999px;background:color-mix(in oklab,var(--color-success) 16%, transparent);color:var(--color-success);font-size:var(--text-xs);font-weight:700}
+    .muted{color:var(--color-text-muted)}
+    .footer-note{font-size:var(--text-xs);color:var(--color-text-muted)}
+    .header-title strong,.num{font-variant-numeric:tabular-nums lining-nums}
+    .theme-toggle{width:42px;height:42px;border-radius:12px;background:var(--color-surface-offset);display:grid;place-items:center;border:1px solid color-mix(in oklab,var(--color-text) 8%, transparent)}
+    canvas{width:100% !important;height:320px !important}
+    @media (max-width: 1100px){.dashboard{grid-template-columns:1fr;grid-template-rows:72px auto 1fr}.sidebar{grid-row:auto;border-right:none;border-bottom:1px solid color-mix(in oklab,var(--color-text) 12%, transparent)}.header,.main{grid-column:auto}.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}.cards-3{grid-template-columns:1fr}.cards-2{grid-template-columns:1fr}}
+    @media (max-width: 700px){html,body{overflow:auto}.dashboard{height:auto}.main{overflow:visible;padding:var(--space-4)}.sidebar{padding:var(--space-4)}.header{padding:0 var(--space-4)}.kpi-grid{grid-template-columns:1fr}.hero h2{max-width:none}}
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Logo VWCE PAC">
+            <path d="M4 16L9 11L13 15L20 8" />
+            <path d="M20 8H15" />
+          </svg>
+        </div>
+        <div>
+          <h1>VWCE PAC</h1>
+          <p>Dashboard automatica ETF</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navigazione principale">
+        <a href="#overview" class="active">Portafoglio</a>
+        <a href="#analytics">Analisi</a>
+        <a href="#pac">Cronologia PAC</a>
+        <a href="#charts">Grafici</a>
+        <a href="#projection">Proiezioni</a>
+      </nav>
+      <div class="panel section" style="margin-top: var(--space-8);">
+        <h3 style="margin-bottom: .8rem;">Architettura</h3>
+        <p class="footer-note">HTML, CSS, JavaScript, Chart.js, fetch API, hosting GitHub Pages, refresh dati all'apertura pagina.</p>
+      </div>
+    </aside>
+
+    <header class="header">
+      <div class="header-title">
+        <div class="muted" style="font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;">Tracker</div>
+        <strong>VWCE · IE00BK5BQT80</strong>
+      </div>
+      <div style="display:flex; align-items:center; gap: .75rem;">
+        <span id="lastUpdate" class="muted" style="font-size: var(--text-sm);">Ultimo aggiornamento: --</span>
+        <button class="theme-toggle" data-theme-toggle aria-label="Cambia tema">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="panel hero" id="overview">
+        <div>
+          <h2>Dashboard PAC VWCE completamente automatica.</h2>
+          <p>Layout web app responsive, dati aggiornati tramite API, cronologia PAC modificabile, indicatori di accumulo e grafici Chart.js in stile vicino alla dashboard che stai usando ora.</p>
+        </div>
+        <div class="controls">
+          <button class="btn btn-primary" id="refreshBtn">Aggiorna dati live</button>
+          <button class="btn btn-secondary">Esporta CSV</button>
+        </div>
+      </section>
+
+      <section class="kpi-grid">
+        <article class="panel kpi"><div class="label">Investito totale</div><div class="value">€ 935,64</div><div class="delta">PAC attivo mensile</div></article>
+        <article class="panel kpi"><div class="label">Valore attuale</div><div class="value">€ 957,12</div><div class="delta">Quote x prezzo live</div></article>
+        <article class="panel kpi"><div class="label">Gain/Loss €</div><div class="value">€ 21,48</div><div class="delta">Lordo</div></article>
+        <article class="panel kpi"><div class="label">Gain/Loss %</div><div class="value">2,30%</div><div class="delta">Sul capitale investito</div></article>
+        <article class="panel kpi"><div class="label">N° quote</div><div class="value">6,00</div><div class="delta">VWCE detenute</div></article>
+      </section>
+
+      <section class="grid-2" id="analytics">
+        <div class="panel section">
+          <h3>Analisi</h3>
+          <div class="cards-3">
+            <div class="mini"><div class="name">Performance 7 giorni</div><div class="num">+0,17%</div></div>
+            <div class="mini"><div class="name">Performance 30 giorni</div><div class="num">+4,04%</div></div>
+            <div class="mini"><div class="name">Performance 90 giorni</div><div class="num">+8,92%</div></div>
+            <div class="mini"><div class="name">Drawdown</div><div class="num">-3,23%</div></div>
+            <div class="mini"><div class="name">Prezzo medio di carico</div><div class="num">€ 155,94</div></div>
+            <div class="mini"><div class="name">Rendimento netto stimato</div><div class="num">€ 15,89</div></div>
+          </div>
+        </div>
+        <div class="panel section">
+          <h3>Indicatore PAC</h3>
+          <div class="traffic wait"><span>●</span><span>Attendere</span></div>
+          <p class="muted" style="margin-top: 1rem; max-width: 36ch;">Logica operativa: compra sotto PMC, neutrale tra PMC e +5%, attesa oltre +5%.</p>
+          <div class="cards-2" style="margin-top: 1rem;">
+            <div class="mini"><div class="name">CAGR</div><div class="num">8,40%</div></div>
+            <div class="mini"><div class="name">XIRR</div><div class="num">9,10%</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid-2" id="charts">
+        <div class="panel section">
+          <h3>Andamento VWCE</h3>
+          <canvas id="priceChart" aria-label="Grafico andamento VWCE" role="img"></canvas>
+        </div>
+        <div class="panel section">
+          <h3>Portafoglio e PAC</h3>
+          <canvas id="portfolioChart" aria-label="Grafico portafoglio e PAC" role="img"></canvas>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="panel section">
+          <h3>Contributi vs rendimento</h3>
+          <canvas id="contributionChart" aria-label="Grafico contributi PAC e rendimento" role="img"></canvas>
+        </div>
+        <div class="panel section" id="projection">
+          <h3>Proiezioni</h3>
+          <div class="cards-3">
+            <div class="mini"><div class="name">10 anni</div><div class="num">€ 31.200</div></div>
+            <div class="mini"><div class="name">20 anni</div><div class="num">€ 86.900</div></div>
+            <div class="mini"><div class="name">30 anni</div><div class="num">€ 188.500</div></div>
+          </div>
+          <p class="footer-note" style="margin-top: 1rem;">Proiezioni da rendere dinamiche con PAC annuale ricalcolato e target crescita +2% annuo.</p>
+        </div>
+      </section>
+
+      <section class="panel section" id="pac">
+        <h3>Cronologia PAC</h3>
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Importo</th><th>Quantità</th><th>Prezzo acquisto</th><th>Stato</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>08/04/2026</td><td>€ 296,18</td><td>2</td><td>€ 148,09</td><td><span class="status">Eseguito</span></td></tr>
+            <tr><td>08/05/2026</td><td>€ 316,24</td><td>2</td><td>€ 158,12</td><td><span class="status">Eseguito</span></td></tr>
+            <tr><td>08/06/2026</td><td>€ 323,22</td><td>2</td><td>€ 161,61</td><td><span class="status">Eseguito</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const themeBtn = document.querySelector('[data-theme-toggle]');
+    const root = document.documentElement;
+    let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    root.setAttribute('data-theme', theme);
+    themeBtn.addEventListener('click', () => {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', theme);
+    });
+
+    const axisColor = () => getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim();
+    const primary = () => getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+    const success = () => getComputedStyle(document.documentElement).getPropertyValue('--color-success').trim();
+    const warning = () => getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim();
+    const divider = () => getComputedStyle(document.documentElement).getPropertyValue('--color-divider').trim();
+
+    function commonOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: axisColor(), boxWidth: 10, usePointStyle: true } } },
+        scales: {
+          x: { ticks: { color: axisColor() }, grid: { color: divider() } },
+          y: { ticks: { color: axisColor() }, grid: { color: divider() } }
+        }
+      };
+    }
+
+    let charts = [];
+    function renderCharts() {
+      charts.forEach(c => c.destroy());
+      charts = [];
+      charts.push(new Chart(document.getElementById('priceChart'), {
+        type: 'line',
+        data: { labels: ['Apr 2026', 'Mag 2026', 'Giu 2026'], datasets: [{ label: 'Prezzo VWCE', data: [148.09, 158.12, 159.52], borderColor: primary(), backgroundColor: 'rgba(79,152,163,.15)', fill: true, tension: .28, pointRadius: 4 }] },
+        options: commonOptions()
+      }));
+      charts.push(new Chart(document.getElementById('portfolioChart'), {
+        type: 'line',
+        data: { labels: ['Apr', 'Mag', 'Giu'], datasets: [{ label: 'Valore portafoglio', data: [296.18, 612.42, 957.12], borderColor: success(), backgroundColor: 'rgba(109,170,69,.15)', fill: true, tension: .3 }, { label: 'Investito cumulato', data: [296.18, 612.42, 935.64], borderColor: warning(), borderDash: [6,6], tension: .25 }] },
+        options: commonOptions()
+      }));
+      charts.push(new Chart(document.getElementById('contributionChart'), {
+        type: 'bar',
+        data: { labels: ['Apr', 'Mag', 'Giu'], datasets: [{ label: 'Contributi PAC', data: [296.18, 316.24, 323.22], backgroundColor: 'rgba(79,152,163,.75)' }, { label: 'Rendimento', data: [0, 8.65, 21.48], backgroundColor: 'rgba(109,170,69,.75)' }] },
+        options: commonOptions()
+      }));
+    }
+
+    window.addEventListener('load', renderCharts);
+    themeBtn.addEventListener('click', () => setTimeout(renderCharts, 20));
+  
+const refreshBtn=document.getElementById('refreshBtn');
+const lastUpdate=document.getElementById('lastUpdate');
+
+async function fetchVWCE(){
+ try{
+   refreshBtn.disabled=true;
+   refreshBtn.textContent='Aggiornamento...';
+
+   const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/VWCE.DE');
+   const j=await r.json();
+
+   const price=j.chart.result[0].meta.regularMarketPrice || 0;
+
+   const vals=document.querySelectorAll('.kpi .value');
+   if(vals.length>1){
+      vals[1].textContent='€ '+price.toFixed(2);
+   }
+
+   if(window.charts && charts[0]){
+      const t=new Date().toLocaleTimeString('it-IT');
+      charts[0].data.labels.push(t);
+      charts[0].data.datasets[0].data.push(price);
+
+      if(charts[0].data.labels.length>30){
+         charts[0].data.labels.shift();
+         charts[0].data.datasets[0].data.shift();
+      }
+      charts[0].update();
+   }
+
+   lastUpdate.textContent='Ultimo aggiornamento: '+new Date().toLocaleString('it-IT');
+ }catch(e){
+   console.error(e);
+ }finally{
+   refreshBtn.disabled=false;
+   refreshBtn.textContent='Aggiorna dati live';
+ }
+}
+
+window.addEventListener('load',()=>setTimeout(fetchVWCE,1000));
+setInterval(fetchVWCE,60000);
+refreshBtn?.addEventListener('click',fetchVWCE);
+
+document.querySelector('.btn.btn-secondary')?.addEventListener('click',()=>{
+ let csv='Data,Importo,Quantita,Prezzo\n';
+ document.querySelectorAll('tbody tr').forEach(r=>{
+   csv+=[...r.children].slice(0,4).map(td=>td.innerText).join(',')+'\n';
+ });
+ const blob=new Blob([csv],{type:'text/csv'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download='vwce_pac.csv';
+ a.click();
+});
+
+</script>
+</body>
+</html>
